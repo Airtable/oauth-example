@@ -6,7 +6,8 @@ This code example is intended for Mac and Linux users. Windows developers may ne
 Setup instructions
 1. Install [nodejs](https://nodejs.org/en/) (this repo is tested with node16).
 2. From the project root directory run ```npm i``` to install the dependencies.
-3. run ```touch ./.env``` to create a `.env` file, then copy paste the following contents into it:
+3. Go to https://airtable.com/oauth/create and register a new integration. Set the redirect URL to http://localhost:4000/airtable-oauth (if you choose a different path or port you will need to edit the code).
+4. run ```touch ./.env``` to create a `.env` file, then copy paste the following contents into it:
     ```
     PORT=4000
     # Uses the PORT variable declared here, the path is defined in code
@@ -19,7 +20,6 @@ Setup instructions
     # you want for your integration
     SCOPE=data.records:read data.records:write
     ```
-4. Go to https://www.airtable.com/oauth/create and register a new integration. Set the redirect URL to http://localhost:4000/airtable-oauth (if you choose a different path or port you will need to edit the code).
 5. within `./.env` (the file you created) fill in your `client_id`, desired `scopes`, and `client_secret` (if applicable).
 6. From the project root directory run ```npm start``` to begin running the service. You should see "Example app listening on port 4000" in your console. Note that if you change the values in `./env` you'll need to restart this process, any other changes to the code should be hot-reloaded when saving.
 
