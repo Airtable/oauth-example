@@ -16,7 +16,7 @@ const port = config.port;
 // if you edit the path of this URL will you will need to edit the /airtable-oauth route to match your changes
 const redirectUri = config.redirectUri.trim();
 const scope = config.scope.trim();
-const baseUrl = config.airtableBaseUrl.trim();
+const airtableUrl = config.airtableUrl.trim();
 
 const encodedCredentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 const authorizationHeader = `Basic ${encodedCredentials}`;
@@ -49,7 +49,7 @@ app.get('/redirect-testing', (req, res) => {
     };
 
     // build the authorization URL
-    const authorizationUrl = new URL(`${baseUrl}/oauth2/v1/authorize`);
+    const authorizationUrl = new URL(`${airtableUrl}/oauth2/v1/authorize`);
     authorizationUrl.searchParams.set('code_challenge', codeChallenge);
     authorizationUrl.searchParams.set('code_challenge_method', codeChallengeMethod);
     authorizationUrl.searchParams.set('state', state);
@@ -89,7 +89,7 @@ app.get('/airtable-oauth', (req, res) => {
     res.send('check the terminal running the server for your access token');
     axios({
         method: 'POST',
-        url: `${baseUrl}/oauth2/v1/token`,
+        url: `${airtableUrl}/oauth2/v1/token`,
         headers,
         // stringify the request body like a URL query string
         data: qs.stringify({

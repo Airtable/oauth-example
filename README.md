@@ -16,9 +16,9 @@ Setup instructions
         port: 4000,
         redirectUri: 'http://localhost:4000/airtable-oauth',
         clientId: INSERT_YOUR_CLIENT_ID,
-        // Leave client_secret empty if you have no client_secret (nothing after the =)
+        // If you're not using a client secret, set to the empty string: ""
         clientSecret: INSERT_YOUR_CLIENT_SECRET,
-        airtableBaseUrl: 'https://www.airtable.com',
+        airtableUrl: 'https://www.airtable.com',
         // space delimited list of Airtable scopes, update to the list of scopes you want for your integration
         scope: 'data.records:read data.records:write',
     };
