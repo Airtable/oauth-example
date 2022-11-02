@@ -7,16 +7,16 @@ const express = require('express');
 const app = express();
 // set up environment variables
 // if you have not created a .env file by following the README instructions this will not work
-require('dotenv').config();
+const config = require('./config.js');
 
-const clientId = process.env.CLIENT_ID.trim();
-const clientSecret = process.env.CLIENT_SECRET.trim();
+const clientId = config.clientId.trim();
+const clientSecret = config.clientSecret.trim();
 // if you edit the port you will need to edit the redirectUri
-const port = process.env.PORT;
+const port = config.port;
 // if you edit the path of this URL will you will need to edit the /airtable-oauth route to match your changes
-const redirectUri = process.env.REDIRECT_URI.trim();
-const scope = process.env.SCOPE.trim();
-const baseUrl = process.env.AIRTABLE_BASE_URL.trim();
+const redirectUri = config.redirectUri.trim();
+const scope = config.scope.trim();
+const baseUrl = config.airtableBaseUrl.trim();
 
 const encodedCredentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 const authorizationHeader = `Basic ${encodedCredentials}`;
