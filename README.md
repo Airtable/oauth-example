@@ -10,7 +10,7 @@ Setup instructions
 2. From the project root directory run `npm i` to install the dependencies.
 3. Go to https://airtable.com/create/oauth and register a new integration. Set the redirect URL to http://localhost:4000/airtable-oauth (if you choose a different path or port you will need to edit the code).
 4. run `touch ./.config.js` to create a `.config.js` file, then copy paste the following contents into it:
-    ```
+    ```typescript
     const config = {
         // Uses the PORT variable declared here, the path is defined in code
         port: 4000,
@@ -20,7 +20,7 @@ Setup instructions
         clientSecret: INSERT_YOUR_CLIENT_SECRET,
         airtableBaseUrl: 'https://www.airtable.com',
         // space delimited list of Airtable scopes, update to the list of scopes you want for your integration
-        scope: 'data.records:read data.records:write'
+        scope: 'data.records:read data.records:write',
     };
     module.exports = config;
     ```
