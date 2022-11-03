@@ -25,7 +25,7 @@ Setup instructions
     module.exports = config;
     ```
 5. within `./.config.js` (the file you created) fill in your `client_id`, desired `scopes`, and `client_secret` (if applicable).
-6. From the project root directory run `npm start` to begin running the service. You should see "Example app listening on port 4000" in your console. Note that if you change the values in `./config.js` you'll need to restart this process, any other changes to the code should be hot-reloaded when saving.
+6. From the project root directory run `npm start` to begin running the service. You should see "Example app listening on port 4000" in your console. Note that if you change the values in `./.config.js` you'll need to restart this process, any other changes to the code should be hot-reloaded when saving.
 
 Creating a token:
 
