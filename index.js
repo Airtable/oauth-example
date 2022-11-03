@@ -7,7 +7,7 @@ const express = require('express');
 const app = express();
 // set up environment variables
 // if you have not created a .env file by following the README instructions this will not work
-const config = require('./config.js');
+const config = require('./.config.js');
 
 const clientId = config.clientId.trim();
 const clientSecret = config.clientSecret.trim();
