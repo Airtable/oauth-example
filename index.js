@@ -63,10 +63,12 @@ app.get('/redirect-testing', (req, res) => {
     res.redirect(authorizationUrl.toString());
 });
 
+// route that user is redirected to after successful or failed authorization
+// Note that one exemption is that if your client_id is invalid or the provided
+// redirect_uri does exactly match what Airtable has stored, the user will not
+// be redirected to this route, even with an error.
 app.get('/airtable-oauth', (req, res) => {
-    const code = req.query.code;
-    const state = req.query.state;
-    const codeChallenge = req.query.code_challenge;
+    const state = req.query.state
     const cached = authorizationCache[state];
     // validate request, you can include other custom checks here as well
     if (cached === undefined) {
@@ -75,6 +77,25 @@ app.get('/airtable-oauth', (req, res) => {
     }
     // clear the cache
     delete authorizationCache[state];
+
+    // Check if the redirect includes an error code.
+    // Note that if your client_id and redirect_uri do not match the user will never be re-directed
+    // Note also that if you did not include "state" in the request, then this redirect would also not include "state"
+    if (req.query.error) {
+        const error = req.query.error;
+        const errorDescription = req.query.error_description;
+        res.send(`
+            There was an error authorizing this request.
+            <br/>Error: "${error}"
+            <br/>Error Description: "${errorDescription}"
+        `);
+        return;
+    }
+
+    // since the authorization didn't error, we know there's a grant code in the query
+    // we also retrieve the stashed code_verifier for this request
+    const code = req.query.code;
+    const codeVerifier = cached.codeVerifier;
 
     const headers = {
         // Content-Type is always required
@@ -96,7 +117,7 @@ app.get('/airtable-oauth', (req, res) => {
             // client_id is optional if authorization header provided
             // required otherwise.
             client_id: clientId,
-            code_verifier: cached.codeVerifier,
+            code_verifier: codeVerifier,
             redirect_uri: redirectUri,
             code,
             code_challenge_method: 'S256',
