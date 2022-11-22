@@ -120,7 +120,6 @@ app.get('/airtable-oauth', (req, res) => {
             code_verifier: codeVerifier,
             redirect_uri: redirectUri,
             code,
-            code_challenge_method: 'S256',
             grant_type: 'authorization_code',
         }),
     })
