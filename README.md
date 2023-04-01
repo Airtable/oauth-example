@@ -30,8 +30,15 @@ Setup instructions
 Creating a token:
 
 1. Ensure the process is running and configured with your credentials in `./.config.js`
-2. Visit `http://localhost:4000/` and click "Testify!", this should bring you to the authorization screen
+2. Visit `http://localhost:4000/` and click the link to authorize your integration
 3. Add your desired resources, then click authorize.
-4. Your OAuth Access token should be viewable in the terminal running the server
+4. The response, including your access token and refresh token, should be visible
+
+Refreshing a token:
+1. Ensure the process is running and configured with your credentials in `./.config.js`
+2. Ensure you have a refresh token (obtainable by creating a token, see above)
+3. Visit `http://localhost:4000/` and enter your refresh token to the input field and click "submit"
+4. The response, including your new access token and refresh token, should be visible
+
 
 You can read more [in the docs](https://airtable.com/oauth-beta-developer-reference).
