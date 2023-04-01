@@ -3,8 +3,11 @@ const {URL} = require('url');
 const axios = require('axios');
 const qs = require('qs');
 const express = require('express');
+const bodyParser = require('body-parser');
 
 const app = express();
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json());
 // set up environment variables
 // if you have not created a .env file by following the README instructions this will not work
 const config = require('./.config.js');
@@ -21,8 +24,25 @@ const airtableUrl = config.airtableUrl.trim();
 const encodedCredentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 const authorizationHeader = `Basic ${encodedCredentials}`;
 
+// book keeping to using this easier, not needed in a real implementation
+setLatestTokenRequestState('NONE');
+
 app.get('/', (req, res) => {
-    res.send('<a href="redirect-testing">Testify!</a>');
+    const latestRequestStateDisplayData = formatLatestTokenRequestStateForDeveloper();
+    res.send(`
+  <div>
+    <h3> New Token</h3>
+    <a href="redirect-testing">Click to authorize and create a new access token</a>
+    <br/>
+    <h3>Refresh a token</h3>
+    ${latestRequestStateDisplayData}
+    <p>To Refresh a token, enter it into the input and press "submit"</p>
+    <form action="/refresh_token" method="post" >
+        <label for="refresh">Refresh token:
+        <input type="text" id="refresh" name="refresh_token" autocomplete="off" minLength="64"/>
+        <input type="submit">
+    </form>
+  `);
 });
 
 const authorizationCache = {};
@@ -68,7 +88,7 @@ app.get('/redirect-testing', (req, res) => {
 // redirect_uri does exactly match what Airtable has stored, the user will not
 // be redirected to this route, even with an error.
 app.get('/airtable-oauth', (req, res) => {
-    const state = req.query.state
+    const state = req.query.state;
     const cached = authorizationCache[state];
     // validate request, you can include other custom checks here as well
     if (cached === undefined) {
@@ -107,7 +127,9 @@ app.get('/airtable-oauth', (req, res) => {
         headers.Authorization = authorizationHeader;
     }
 
-    res.send('check the terminal running the server for your access token');
+    // more book-keeping, you don't need this
+    setLatestTokenRequestState('LOADING');
+    // make the POST request
     axios({
         method: 'POST',
         url: `${airtableUrl}/oauth2/v1/token`,
@@ -124,14 +146,178 @@ app.get('/airtable-oauth', (req, res) => {
         }),
     })
         .then((response) => {
-            const prettyPrintedResult = JSON.stringify(response.data, null, 2);
-            console.log(prettyPrintedResult);
+            // book-keeping so we can show you the response
+            setLatestTokenRequestState('AUTHORIZATION_SUCCESS', response.data);
+            // redirect to the form where we show you the response
+            // you don't need this in your own implementation
+            res.redirect('/');
         })
         .catch((e) => {
-            console.log('uh oh, something went wrong', e.response.data);
+            // 400 and 401 errors mean some problem in our configuration, the user waited too
+            // long to authorize, or there were multiple requests using this auth code.
+            // We expect these but not other error codes during normal operations
+            if (e.response && [400, 401].includes(e.response.status)) {
+                setLatestTokenRequestState('AUTHORIZATION_ERROR', e.response.data);
+            } else if (e.response) {
+                console.log('uh oh, something went wrong', e.response.data);
+                setLatestTokenRequestState('UNKNOWN_AUTHORIZATION_ERROR');
+            } else {
+                console.log('uh oh, something went wrong', e);
+                setLatestTokenRequestState('UNKNOWN_AUTHORIZATION_ERROR');
+            }
+            res.redirect('/');
+        });
+});
+
+// this route exists only for your convenience in testing Airtable OAuth
+app.get('/refresh_token_form', (req, res) => {
+    const latestRequestStateDisplayData = formatLatestTokenRequestStateForDeveloper();
+
+    res.send(`<div>
+        ${latestRequestStateDisplayData}
+        <p>To Refresh a token, enter it into the input and press "submit"</p>
+        <form action="/refresh_token" method="post" >
+            <label for="refresh">Refresh token:
+            <input type="text" id="refresh" name="refresh_token" autocomplete="off" minLength="64"/>
+            <input type="submit">
+        </form>
+        <a href="/">Back to home</a>
+    </div>`);
+});
+
+// this route demonstrates how to make refresh a token, though normally
+// this should not occur inside a route handler (we do so here to make this
+// tool easier to use).
+app.post('/refresh_token', (req, res) => {
+    let refreshToken = req.body ? req.body.refresh_token : undefined;
+    if (!refreshToken) {
+        console.log(req.body);
+        res.send('no refresh token in data');
+        return;
+    }
+
+    if (typeof refreshToken !== 'string') {
+        console.log(req.body);
+        res.send('refresh token was not a string');
+        return;
+    }
+
+    refreshToken = refreshToken.trim();
+
+    const headers = {
+        // Content-Type is always required
+        'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    if (clientSecret !== '') {
+        // Authorization is required if your integration has a client secret
+        // omit it otherwise
+        headers.Authorization = authorizationHeader;
+    }
+    axios({
+        method: 'POST',
+        url: `${airtableUrl}/oauth2/v1/token`,
+        headers,
+        // stringify the request body like a URL query string
+        data: qs.stringify({
+            // client_id is optional if authorization header provided
+            // required otherwise.
+            client_id: clientId,
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+        }),
+    })
+        .then((response) => {
+            console.log(response);
+            setLatestTokenRequestState('REFRESH_SUCCESS', response.data);
+            res.redirect('/');
+        })
+        .catch((e) => {
+            // 400 and 401 errors mean some problem in our configuration, the refresh token has
+            // already been used, or the refresh token has expired.
+            // We expect these but not other error codes during normal operations
+            if (e.response && [400, 401].includes(e.response.status)) {
+                setLatestTokenRequestState('REFRESH_ERROR', e.response.data);
+            } else if (e.response) {
+                console.log('uh oh, something went wrong', e.response.data);
+                setLatestTokenRequestState('UNKNOWN_REFRESH_ERROR');
+            } else {
+                console.log('uh oh, something went wrong', e);
+                setLatestTokenRequestState('UNKNOWN_REFRESH_ERROR');
+            }
+            res.redirect('/');
         });
 });
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
+
+function setLatestTokenRequestState(state, dataToFormatIfExists) {
+    latestTokenRequestState = {
+        state,
+    };
+
+    if (dataToFormatIfExists) {
+        const json = JSON.stringify(dataToFormatIfExists, null, 2);
+        // access and refresh tokens are difficult to copy paste in normal JSON formatting,
+        // to make it easier we put them on a newline without the quotes
+        const formattedData = json
+            .split('\n')
+            .map((line) =>
+                line.replace(/^(\s+"(access_token|refresh_token)":)\s+"(.*)",$/g, '$1\n$3'),
+            )
+            .join('\n');
+        latestTokenRequestState.formattedData = formattedData;
+        console.log(state, latestTokenRequestState);
+    }
+}
+
+function formatLatestTokenRequestStateForDeveloper() {
+    let formatRequestState = '';
+
+    switch (latestTokenRequestState.state) {
+        case 'NONE':
+            break;
+        case 'LOADING':
+            formatRequestState =
+                'The request for the access token from your latest authorization is still outstanding, check the terminal or refresh';
+            break;
+        case 'AUTHORIZATION_ERROR':
+            formatRequestState = 'Your latest authorization request failed, the error was:';
+            break;
+        case 'UNKNOWN_AUTHORIZATION_ERROR':
+            formatRequestState =
+                'The request for the access token from your latest authorization failed, check the terminal for details';
+            break;
+        case 'REFRESH_ERROR':
+            formatRequestState = 'Your latest refresh request failed, the error was:';
+            break;
+        case 'UNKNOWN_REFRESH_ERROR':
+            formatRequestState =
+                'Your latest request to refresh your access token failed, see the terminal for details';
+            break;
+        case 'AUTHORIZATION_SUCCESS':
+            formatRequestState = 'Your authorization succeeded, the response was:';
+            break;
+        case 'REFRESH_SUCCESS':
+            formatRequestState = 'Your refresh request succeeded, the response was:';
+            break;
+        default:
+            throw Error(
+                `unexpected latestTokenRequestState loading state: ${latestTokenRequestState.state}`,
+            );
+    }
+
+    if (latestTokenRequestState.formattedData) {
+        formatRequestState += `<br/>
+    <code>
+        <pre>${latestTokenRequestState.formattedData}</pre>
+    </code>`;
+    }
+
+    if (formatRequestState) {
+        formatRequestState = `<p>${formatRequestState}</p>`;
+    }
+
+    return formatRequestState;
+}
