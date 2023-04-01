@@ -36,7 +36,11 @@ app.get('/', (req, res) => {
     <br/>
     <h3>Refresh a token</h3>
     ${latestRequestStateDisplayData}
-    <p>To Refresh a token, enter it into the input and press "submit"</p>
+    <p>
+        To test refreshing a token, enter it into the input and press "submit"
+        <br/>
+        In your own code, refreshing should occur as a background process.
+    </p>
     <form action="/refresh_token" method="post" >
         <label for="refresh">Refresh token:
         <input type="text" id="refresh" name="refresh_token" autocomplete="off" minLength="64"/>
