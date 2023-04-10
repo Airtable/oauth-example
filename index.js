@@ -24,7 +24,7 @@ const airtableUrl = config.airtableUrl.trim();
 const encodedCredentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 const authorizationHeader = `Basic ${encodedCredentials}`;
 
-// book keeping to using this easier, not needed in a real implementation
+// book keeping to make using this easier, not needed in a real implementation
 setLatestTokenRequestState('NONE');
 
 app.get('/', (req, res) => {
