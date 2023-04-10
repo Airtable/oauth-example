@@ -177,6 +177,7 @@ app.get('/airtable-oauth', (req, res) => {
 app.get('/refresh_token_form', (req, res) => {
     const latestRequestStateDisplayData = formatLatestTokenRequestStateForDeveloper();
 
+    // double clicking submit may cause a token revocation
     res.send(`<div>
         ${latestRequestStateDisplayData}
         <p>To Refresh a token, enter it into the input and press "submit"</p>
